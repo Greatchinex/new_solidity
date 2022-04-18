@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import CounterArtifact from "../artifacts/contracts/Counter.sol/Counter.json";
 
 // Get ethereum object
 function getEth() {
@@ -55,17 +56,14 @@ async function run() {
 
   const counter = new ethers.Contract(
     process.env.CONTRACT_ADDRESS,
-    [
-      "function count() public",
-      "function getCounter() public view returns (uint32)",
-    ],
+    CounterArtifact.abi,
     new ethers.providers.Web3Provider(getEth()).getSigner() // How to contact the network, Signer(Wallet info to use to process contract transaction that costs money)
   );
 
   // UI elemets to interact with contract
   const el = document.createElement("div");
-  async function setCounter() {
-    el.innerHTML = await counter.getCounter();
+  async function setCounter(count?) {
+    el.innerHTML = count || (await counter.getCounter());
   }
   setCounter(); // So we get the counter value displayed at the begining(getCounter contract method returns that value)
 
@@ -73,10 +71,13 @@ async function run() {
   const button = document.createElement("button");
   button.innerHTML = "Increment Counter";
   button.onclick = async function () {
-    const tx = await counter.count();
-    await tx.wait(); // Waits for transaction to be done(before calling the method below to display the counter update in the UI)
-    setCounter();
+    await counter.count();
   };
+
+  // Listen for counter update event
+  counter.on(counter.filters.CounterInc(), function (count) {
+    setCounter(count);
+  });
 
   document.body.appendChild(el);
   document.body.appendChild(button);
