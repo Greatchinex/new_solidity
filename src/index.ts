@@ -27,17 +27,16 @@ async function requestAccounts() {
   return accounts && accounts.length;
 }
 
+// Run for the HelloWorld Contract
+/***
+ * 
 async function run() {
   if (!(await hasAccounts()) && !(await requestAccounts())) {
     throw new Error("No accounts found");
   }
 
-  /***
-   *  etherContract needs an AddressOrName, Interface and a Provider
-   *
-   */
   const hello = new ethers.Contract(
-    "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+    process.env.CONTRACT_ADDRESS,
     [
       "function hello() public pure returns (string memory)", // stringification of fuction signature
     ],
@@ -45,6 +44,42 @@ async function run() {
   );
 
   document.body.innerHTML = await hello.hello();
+} 
+*/
+
+// Run for the HelloWorld Counter Contract
+async function run() {
+  if (!(await hasAccounts()) && !(await requestAccounts())) {
+    throw new Error("No accounts found");
+  }
+
+  const counter = new ethers.Contract(
+    process.env.CONTRACT_ADDRESS,
+    [
+      "function count() public",
+      "function getCounter() public view returns (uint32)",
+    ],
+    new ethers.providers.Web3Provider(getEth()).getSigner() // How to contact the network, Signer(Wallet info to use to process contract transaction that costs money)
+  );
+
+  // UI elemets to interact with contract
+  const el = document.createElement("div");
+  async function setCounter() {
+    el.innerHTML = await counter.getCounter();
+  }
+  setCounter(); // So we get the counter value displayed at the begining(getCounter contract method returns that value)
+
+  // Create button that increments the counter onclick and displays the incremented value
+  const button = document.createElement("button");
+  button.innerHTML = "Increment Counter";
+  button.onclick = async function () {
+    const tx = await counter.count();
+    await tx.wait(); // Waits for transaction to be done(before calling the method below to display the counter update in the UI)
+    setCounter();
+  };
+
+  document.body.appendChild(el);
+  document.body.appendChild(button);
 }
 
 run();
